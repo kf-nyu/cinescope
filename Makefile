@@ -1,4 +1,4 @@
-.PHONY: setup init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars clean-generated clean-hpc
+.PHONY: setup setup-hpc init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars clean-generated clean-hpc
 
 ROOT_DIR := $(shell pwd)
 PYTHON := $(ROOT_DIR)/.venv/bin/python
@@ -9,6 +9,10 @@ setup:
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 	@echo "Setup complete. Activate with: source .venv/bin/activate"
+
+# Dataproc only: derive NetID from login, write .env from .env.hpc.example, create venv.
+setup-hpc:
+	bash scripts/setup_hpc.sh
 
 init-storage:
 	bash scripts/initialize_storage.sh
@@ -28,8 +32,10 @@ inspect:
 inspect-counts:
 	bash scripts/inspect_imdb.sh --count-rows
 
+# Unset cluster SPARK_HOME so pip PySpark unit tests do not mix with /usr/lib/spark.
 test:
 	@if [ -n "$$JAVA_HOME" ]; then export PATH="$$JAVA_HOME/bin:$$PATH"; fi; \
+	unset SPARK_HOME SPARK_CONF_DIR; \
 	PYSPARK_PYTHON=$(PYTHON) PYSPARK_DRIVER_PYTHON=$(PYTHON) \
 	PYTHONPATH=$(ROOT_DIR)/src $(PYTHON) -m pytest -q
 

@@ -2,7 +2,7 @@
 
 **Repository:** [https://github.com/kf-nyu/cinescope](https://github.com/kf-nyu/cinescope)
 
-Same GitHub repository as local development. Set **`CINESCOPE_NETID`**; HDFS locations are derived automatically.
+Same GitHub repository as local development. On Dataproc, NetID comes from your login (`whoami` → `netid_nyu_edu`).
 
 ## Prerequisites
 
@@ -10,28 +10,33 @@ Same GitHub repository as local development. Set **`CINESCOPE_NETID`**; HDFS loc
 2. SSH into Dataproc (see [NYU Dataproc docs](https://services.rt.nyu.edu/docs/cloud/dataproc/intro/))  
 3. `hdfs` available on the login node  
 
-## Setup
+## Setup (copy-paste)
 
 ```bash
 git clone https://github.com/kf-nyu/cinescope.git cinescope
 cd cinescope
+bash scripts/setup_hpc.sh
 
-python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
 export PYTHONPATH="$PWD/src"
 export PYSPARK_PYTHON="$PWD/.venv/bin/python"
 export PYSPARK_DRIVER_PYTHON="$PWD/.venv/bin/python"
-
-cp .env.hpc.example .env
-# Set CINESCOPE_NETID=your_short_netid  (never commit .env)
 ```
+
+`setup_hpc.sh` will:
+
+1. Read login user via `whoami` (e.g. `ab1234_nyu_edu`)
+2. Set short NetID (`ab1234`)
+3. Copy `.env.hpc.example` → `.env` and fill `CINESCOPE_NETID=…`
+4. Create `.venv` and `pip install -r requirements.txt`
+
+Never commit `.env`. Re-run with `bash scripts/setup_hpc.sh --force` to overwrite `.env`.
 
 ### NetID variable
 
 | Variable | Meaning |
 |---|---|
-| `CINESCOPE_NETID` | Short NetID only (e.g. `ab1234` from `ab1234@nyu.edu`) |
+| `CINESCOPE_NETID` | Short NetID only (filled by `setup_hpc.sh` from login) |
 | `CINESCOPE_HDFS_USER` | Optional override; default `${CINESCOPE_NETID}_nyu_edu` |
 
 Derived when paths are left blank:
@@ -53,6 +58,16 @@ make baseline
 make cast-crew
 make oscars
 ```
+
+`make baseline` / `cast-crew` / `oscars` submit **batch** jobs with:
+
+```text
+spark-submit --master yarn --deploy-mode client …
+```
+
+They auto-detect `spark.hadoop.fs.defaultFS` from `hdfs getconf` (or `SPARK_HADOOP_FS_DEFAULT` in `.env`). Do **not** use Jupyter or an interactive `pyspark` shell on Dataproc.
+
+`make test` uses local pip PySpark and temporarily unsets `SPARK_HOME` so it does not conflict with `/usr/lib/spark`.
 
 ## Local vs HDFS
 
@@ -90,6 +105,8 @@ Requires `.env` with `CINESCOPE_STORAGE_BACKEND=hdfs` (same as a normal HPC run)
 
 ## Notes
 
+- Dataproc Spark is for **batch** `spark-submit` (client deploy-mode). Not Jupyter / shells.  
 - First YARN job after idle may wait for Dataproc autoscaling.  
+- If `fs.defaultFS` resolution fails, set `SPARK_HADOOP_FS_DEFAULT=hdfs://nyu-dataproc-m` (or your cluster’s `hdfs getconf` value) in `.env`.  
 - Large uploads: NYU Dataproc ingest + `hadoop distcp` if home quota is tight.  
 - Never commit `.env`. Never store NetIDs in tracked files.

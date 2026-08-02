@@ -10,6 +10,17 @@ from pyspark.sql import SparkSession
 from cinescope.paths import CineScopePaths, get_paths
 
 
+def _valid_hadoop_default_fs(uri: str) -> bool:
+    """True for namenode URIs like hdfs://host or hdfs://host:8020 (not bare hdfs://)."""
+    if not uri.startswith("hdfs://"):
+        return False
+    rest = uri[len("hdfs://") :]
+    if not rest or rest.startswith("/"):
+        return False
+    host = rest.split("/", 1)[0]
+    return bool(host)
+
+
 def build_spark_session(
     *,
     app_name: str = "cinescope",
@@ -43,11 +54,11 @@ def build_spark_session(
     )
 
     if paths.backend == "hdfs":
-        # Prefer explicit HDFS when running on Dataproc / YARN.
-        builder = builder.config(
-            "spark.hadoop.fs.defaultFS",
-            os.environ.get("SPARK_HADOOP_FS_DEFAULT", "hdfs://"),
-        )
+        # Only set when the URI has a namenode authority (e.g. hdfs://nyu-dataproc-m).
+        # Bare "hdfs://" breaks YARN; if unset, use the cluster Hadoop config.
+        default_fs = os.environ.get("SPARK_HADOOP_FS_DEFAULT", "").strip()
+        if _valid_hadoop_default_fs(default_fs):
+            builder = builder.config("spark.hadoop.fs.defaultFS", default_fs)
 
     for key, value in overrides.items():
         builder = builder.config(key, value)

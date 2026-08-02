@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 # shellcheck disable=SC1091
 source "$ROOT_DIR/scripts/lib/storage.sh"
+# shellcheck disable=SC1091
+source "$ROOT_DIR/scripts/lib/spark_job.sh"
 cinescope_load_env "$ROOT_DIR"
 
 "$ROOT_DIR/scripts/validate_storage.sh"
@@ -26,20 +28,12 @@ mkdir -p \
   "$ROOT_DIR/outputs/charts"
 
 LOG="$ROOT_DIR/outputs/logs/run_baseline.log"
-export PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
-
-if [[ -x "$ROOT_DIR/.venv/bin/python" ]]; then
-  PYTHON="$ROOT_DIR/.venv/bin/python"
-else
-  PYTHON="python3"
-fi
-export PYSPARK_PYTHON="$PYTHON"
-export PYSPARK_DRIVER_PYTHON="$PYTHON"
+JOB="$ROOT_DIR/src/cinescope/jobs/build_movies_ratings.py"
 
 echo "Running baseline Spark job (master=${SPARK_MASTER:-local[*]}, backend=${CINESCOPE_STORAGE_BACKEND})..."
 set +e
-"$PYTHON" -m cinescope.jobs.build_movies_ratings 2>&1 | tee "$LOG"
-status=${PIPESTATUS[0]}
+cinescope_run_spark_job "$ROOT_DIR" "$JOB" "$LOG"
+status=$?
 set -e
 
 if (( status != 0 )); then

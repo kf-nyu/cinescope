@@ -124,18 +124,41 @@ make oscars
 
 ## Getting started — NYU HPC (Dataproc / HDFS)
 
-Same repository. Set **`CINESCOPE_NETID`**; HDFS paths are derived automatically. More detail: [`deploy/hpc/README.md`](deploy/hpc/README.md).
+Same repository. On Dataproc your login is `netid_nyu_edu`; the short NetID is written into `.env` automatically. More detail: [`deploy/hpc/README.md`](deploy/hpc/README.md). **Local Mac does not need a NetID** (use `.env.example` instead).
 
 ### Prerequisites
 
-- NYU HPC account with Dataproc access
+- NYU HPC account with Dataproc access ([SSH](https://dataproc.hpc.nyu.edu/ssh))
 - `hdfs` available on the login node
 
-### 1. Clone and virtualenv
+### 1. One-shot setup (copy-paste on Dataproc)
+
+Clones the repo, derives NetID from `whoami`, creates `.env` from `.env.hpc.example`, and builds the venv:
 
 ```bash
 git clone https://github.com/kf-nyu/cinescope.git cinescope
 cd cinescope
+bash scripts/setup_hpc.sh
+
+source .venv/bin/activate
+export PYTHONPATH="$PWD/src"
+export PYSPARK_PYTHON="$PWD/.venv/bin/python"
+export PYSPARK_DRIVER_PYTHON="$PWD/.venv/bin/python"
+```
+
+Equivalent manual steps (if you prefer not to use the script):
+
+```bash
+git clone https://github.com/kf-nyu/cinescope.git cinescope
+cd cinescope
+
+# Dataproc login is <netid>_nyu_edu → short NetID
+NETID="${USER%_nyu_edu}"
+echo "CINESCOPE_NETID=$NETID"
+
+cp .env.hpc.example .env
+sed -i "s/^CINESCOPE_NETID=.*/CINESCOPE_NETID=${NETID}/" .env
+# never commit .env
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -145,36 +168,15 @@ export PYSPARK_PYTHON="$PWD/.venv/bin/python"
 export PYSPARK_DRIVER_PYTHON="$PWD/.venv/bin/python"
 ```
 
-### 2. Configure `.env` with your NetID variable
-
-```bash
-cp .env.hpc.example .env
-```
-
-Edit `.env` — set only your NetID (do **not** commit this file):
-
-```bash
-CINESCOPE_STORAGE_BACKEND=hdfs
-SPARK_MASTER=yarn
-
-# Short NetID only (the part before @nyu.edu). Example: ab1234
-CINESCOPE_NETID=ab1234
-```
-
-Paths are filled automatically as:
+Paths derived from that NetID:
 
 ```text
 CINESCOPE_HDFS_USER      = ${CINESCOPE_NETID}_nyu_edu
 CINESCOPE_DATA_ROOT      = hdfs:///user/${CINESCOPE_HDFS_USER}/cinescope-data
-SPARK_WAREHOUSE_DIR      = …/warehouse
-SPARK_CHECKPOINT_DIR     = …/checkpoints
 SPARK_LOCAL_DIR          = /tmp/cinescope-spark-${CINESCOPE_NETID}
-CINESCOPE_DOWNLOAD_STAGING = /tmp/cinescope-download-${CINESCOPE_NETID}
 ```
 
-On Dataproc, if `CINESCOPE_NETID` is empty, scripts try `whoami` when it looks like `<netid>_nyu_edu`.
-
-### 3. Run the same Makefile targets
+### 2. Run the pipeline
 
 ```bash
 make init-storage
@@ -188,7 +190,9 @@ make cast-crew
 make oscars
 ```
 
-### 4. Tear down (instructors / TAs / students)
+Pipeline targets use **batch** `spark-submit --master yarn --deploy-mode client` (not Jupyter / interactive shells). `fs.defaultFS` comes from `hdfs getconf` unless you set `SPARK_HADOOP_FS_DEFAULT` in `.env`.
+
+### 3. Tear down (instructors / TAs / students)
 
 After a run on Dataproc, delete **this account’s** CineScope HDFS data and `/tmp` scratch:
 
