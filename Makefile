@@ -1,4 +1,4 @@
-.PHONY: setup setup-hpc init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars clean-generated clean-hpc
+.PHONY: setup setup-hpc init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars pipeline clean-generated clean-hpc
 
 ROOT_DIR := $(shell pwd)
 PYTHON := $(ROOT_DIR)/.venv/bin/python
@@ -50,6 +50,10 @@ enriched:
 
 oscars:
 	bash scripts/run_oscars.sh
+
+# Full pipeline; tees all console output to outputs/logs/pipeline_<UTC>.log
+pipeline:
+	bash scripts/run_pipeline.sh
 
 clean-generated:
 	rm -rf outputs/logs/* \

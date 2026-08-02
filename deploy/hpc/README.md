@@ -47,6 +47,15 @@ hdfs:///user/${CINESCOPE_HDFS_USER}/cinescope-data
 
 ## Run
 
+Preferred — one command, full console log saved under `outputs/logs/`:
+
+```bash
+make pipeline
+# writes outputs/logs/pipeline_<UTC-timestamp>.log (also prints live)
+```
+
+Or the same steps individually:
+
 ```bash
 make init-storage
 make validate-storage

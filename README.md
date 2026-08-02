@@ -120,6 +120,8 @@ make download-oscars
 make oscars
 ```
 
+Or one combined run with a full console log: `make pipeline` → `outputs/logs/pipeline_<UTC>.log`.
+
 ---
 
 ## Getting started — NYU HPC (Dataproc / HDFS)
@@ -177,6 +179,15 @@ SPARK_LOCAL_DIR          = /tmp/cinescope-spark-${CINESCOPE_NETID}
 ```
 
 ### 2. Run the pipeline
+
+One command runs all steps and saves the **entire** console log (no copy-paste):
+
+```bash
+make pipeline
+# → outputs/logs/pipeline_<UTC-timestamp>.log
+```
+
+Or step by step (same sequence):
 
 ```bash
 make init-storage
