@@ -232,8 +232,9 @@ Safe to publish:
 Keep private (gitignored — do not force-add):
 
 - `.env` (NetID, local absolute paths)
-- `docs/internal/` (course planning notes)
+- `docs/internal/` (local planning notes — not published)
 - `outputs/logs/`, `outputs/metrics/*.json`, `outputs/plans/*.txt` (often contain absolute home/volume paths)
+- Notebook **outputs** (re-run locally; committed notebooks should be output-cleared)
 - `.venv/`
 
 Readers should copy an example env file and set their own paths / `CINESCOPE_NETID`.
@@ -255,7 +256,9 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 
 **Under `CINESCOPE_DATA_ROOT`:** `raw/`, `bronze/`, `silver/` Parquet trees.
 
-**Local repo `outputs/` (machine-specific; gitignored metrics/plans/logs):** JSON metrics and Spark plans for your run.
+**Local repo `outputs/` (machine-specific; gitignored metrics/plans/logs):** JSON metrics, Spark plans, and charts under `outputs/charts/generated/`.
+
+**Notebooks (local Spark):** after silver tables exist, run `02_core_analytics`, `03_train_hit_model`, `04_train_awards_model`.
 
 ## Safety warnings
 
@@ -263,10 +266,24 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 - If `CINESCOPE_SSD_VOLUME` is set, it must be mounted and contain the data root.
 - On HDFS, `SPARK_LOCAL_DIR` must remain a local scratch path.
 
-## Current scope
+## Current status
 
-- IMDb + Oscars ETL, cast/crew features, local and HDFS backends, tests
+**Done**
+- IMDb + Oscars ETL (local + Dataproc batch), cast/crew features, awards enrichment, unit tests
+- Dataproc full pipeline ≈ **23 min** (ETL only — no analytics/MLlib on the cluster)
+- Local notebook `02_core_analytics` — proposal §2.3 insights + charts
+- Local notebooks `03` / `04` — provisional **GBT** hit + awards models (untuned; default threshold ≈0.5)
 
-## Deferred
+**In progress**
+- Layer 5: add **logistic regression**, hyperparameter tuning, decision-threshold / PR sweep (labels still provisional)
 
-Review sentiment, commercial cloud (GCP/Azure), GPU training, final slides/report; MLlib hit/awards models next.
+**Runtime**
+- Dataproc = ETL batch only  
+- Analytics / MLlib = local Spark notebooks (not JupyterHub)
+
+**Not started yet**
+- Report and slides (after Layer 5 is locked)
+
+## Out of scope (for now)
+
+Not in the current pipeline: review-text sentiment, Hadoop MapReduce Streaming, commercial cloud (GCP/Azure), or GPU training.

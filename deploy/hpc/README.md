@@ -78,6 +78,16 @@ They auto-detect `spark.hadoop.fs.defaultFS` from `hdfs getconf` (or `SPARK_HADO
 
 `make test` uses local pip PySpark and temporarily unsets `SPARK_HOME` so it does not conflict with `/usr/lib/spark`.
 
+## Analytics / MLlib (not on Dataproc)
+
+Course Dataproc is **ETL batch only**. Run §2.3 insights and hit/awards models on a **local** laptop against silver Parquet (SSD or local data root):
+
+- `notebooks/02_core_analytics.ipynb`
+- `notebooks/03_train_hit_model.ipynb`
+- `notebooks/04_train_awards_model.ipynb`
+
+Do **not** use JupyterHub (~1GB quota) for Spark MLlib. Hadoop MapReduce Streaming is **not** part of the initial ETL.
+
 ## Local vs HDFS
 
 | Location | Contents |

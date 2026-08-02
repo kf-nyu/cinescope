@@ -72,17 +72,15 @@ if [[ "$NO_VENV" -eq 0 ]]; then
   pip install --upgrade pip
   pip install -r "$ROOT_DIR/requirements.txt"
   echo
-  echo "Virtualenv ready. For this shell (and new shells):"
-  echo "  source .venv/bin/activate"
-  echo "  export PYTHONPATH=\"\$PWD/src\""
-  echo "  export PYSPARK_PYTHON=\"\$PWD/.venv/bin/python\""
-  echo "  export PYSPARK_DRIVER_PYTHON=\"\$PWD/.venv/bin/python\""
+  echo "Virtualenv ready."
 fi
 
 echo
-echo "Next:"
-echo "  make init-storage && make validate-storage"
-echo "  make download && make download-oscars"
-echo "  make test"
-echo "  make baseline && make cast-crew && make oscars"
-echo "  make clean-hpc   # when finished"
+echo "Next (new shells need activate + exports again):"
+echo "  source .venv/bin/activate"
+echo "  export PYTHONPATH=\"\$PWD/src\""
+echo "  export PYSPARK_PYTHON=\"\$PWD/.venv/bin/python\""
+echo "  export PYSPARK_DRIVER_PYTHON=\"\$PWD/.venv/bin/python\""
+echo "  make pipeline          # full run; log → outputs/logs/pipeline_<UTC>.log"
+echo "  make clean-hpc         # when finished (type YES)"
+
