@@ -1,0 +1,7 @@
+tconst	titleType	primaryTitle	originalTitle	isAdult	startYear	endYear	runtimeMinutes	genres
+tt0000001	movie	Valid Movie One	Valid Movie One	0	1999	\N	120	Drama,Comedy
+tt0000002	tvSeries	Not A Movie	Not A Movie	0	2001	\N	45	Comedy
+tt0000003	movie	Nullish Movie	Nullish Movie	0	\N	\N	\N	\N
+tt0000004	movie	Bad Runtime Movie	Bad Runtime Movie	0	2010	\N	0	Action
+tt0000005	movie	Unrated Movie	Unrated Movie	0	2015	\N	95	Horror
+tt0000006	short	Short Film	Short Film	0	2020	\N	15	Documentary

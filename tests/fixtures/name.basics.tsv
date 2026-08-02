@@ -1,0 +1,6 @@
+nconst	primaryName	birthYear	deathYear	primaryProfession	knownForTitles
+nm1000001	Alice Actor	1980	\N	actress,producer	tt1000001,tt1000002
+nm1000002	Bob Actor	\N	\N	actor	tt1000001
+nm1000003	Dana Director	1970	\N	director,writer	tt1000001,tt1000002,tt1000003
+nm1000004	Wendy Writer	1975	\N	writer	tt1000001
+nm1000005	Newbie Actor	1990	\N	actor	tt1000003

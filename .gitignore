@@ -1,0 +1,40 @@
+# Local environment
+.env
+.env.*
+!.env.example
+!.env.hpc.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated / machine-specific run artifacts (often contain absolute home paths)
+outputs/logs/
+outputs/metrics/*
+!outputs/metrics/.gitkeep
+outputs/plans/*
+!outputs/plans/.gitkeep
+outputs/charts/generated/
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Internal planning documents
+docs/internal/
+
+# Safety: prevent accidental local data creation
+data/
+spark-temp/
+warehouse/
+checkpoints/
+models/
