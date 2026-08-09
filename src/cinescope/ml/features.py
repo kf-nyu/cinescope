@@ -9,6 +9,8 @@ from pyspark.ml.feature import Imputer, VectorAssembler
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
+from cinescope.schemas import CAST_CREW_FEATURE_SEMANTICS_VERSION
+
 # Provisional hit definition (may be retuned after evaluation).
 HIT_RATING_MIN = 7.0
 HIT_VOTES_MIN = 1000
@@ -39,6 +41,26 @@ OSCAR_EXCLUDE = (
     "writing_win_count",
 )
 
+SNAPSHOT_VOTE_EXCLUDE = (
+    "cast_prior_votes_sum",
+    "director_prior_votes_sum",
+    "principal_prior_votes_sum",
+)
+
+FULL_CAREER_EXCLUDE = (
+    "career_movie_count",
+    "career_average_rating",
+    "career_total_votes",
+    "is_known_person",
+)
+
+FORBIDDEN_PREDICTOR_COLUMNS = frozenset(
+    POST_RELEASE_EXCLUDE
+    + OSCAR_EXCLUDE
+    + SNAPSHOT_VOTE_EXCLUDE
+    + FULL_CAREER_EXCLUDE
+)
+
 # Numeric / boolean columns safe as pre-release predictors when present.
 PRE_RELEASE_NUMERIC = (
     "start_year",
@@ -50,15 +72,12 @@ PRE_RELEASE_NUMERIC = (
     "producer_count",
     "cast_prior_movie_count_mean",
     "cast_prior_rating_mean",
-    "cast_prior_votes_sum",
     "director_prior_movie_count_mean",
     "director_prior_rating_mean",
-    "director_prior_votes_sum",
     "writer_prior_movie_count_mean",
     "writer_prior_rating_mean",
     "principal_prior_movie_count_mean",
     "principal_prior_rating_mean",
-    "principal_prior_votes_sum",
     "principal_max_prior_rating",
     "known_cast_count",
     "known_director_count",
@@ -157,6 +176,9 @@ def build_feature_pipeline(
     label_col: str,
 ) -> Pipeline:
     """Impute numeric nulls → assemble features. Label column must already exist."""
+    validate_feature_columns(feature_cols)
+    if label_col in feature_cols:
+        raise ValueError(f"Label column cannot be a predictor: {label_col}")
     # Imputer requires DoubleType-ish; cast in notebook or here via select.
     imputer = Imputer(
         inputCols=list(feature_cols),
@@ -171,6 +193,26 @@ def build_feature_pipeline(
     return Pipeline(stages=[imputer, assembler])
 
 
+def validate_feature_columns(feature_cols: Sequence[str]) -> None:
+    """Reject outcome, full-career, and retrospective snapshot predictors."""
+    forbidden = sorted(set(feature_cols) & FORBIDDEN_PREDICTOR_COLUMNS)
+    if forbidden:
+        raise ValueError(
+            "Forbidden predictor columns: " + ", ".join(forbidden)
+        )
+
+
+def validate_feature_artifact_metadata(metadata: dict) -> None:
+    """Reject silver outputs generated before point-in-time feature semantics."""
+    version = metadata.get("feature_semantics_version")
+    if version != CAST_CREW_FEATURE_SEMANTICS_VERSION:
+        raise RuntimeError(
+            "Cast/crew features are stale: expected feature semantics "
+            f"version {CAST_CREW_FEATURE_SEMANTICS_VERSION}, found {version!r}. "
+            "Rerun the cast/crew and Oscar jobs before training."
+        )
+
+
 def leakage_notes() -> dict:
     """Document label rules and feature exclusions for metrics JSON."""
     return {
@@ -182,8 +224,10 @@ def leakage_notes() -> dict:
             "rule": "was_oscar_nominated",
             "column": "label_awards",
         },
-        "excluded_from_features": list(POST_RELEASE_EXCLUDE) + list(OSCAR_EXCLUDE),
+        "excluded_from_features": sorted(FORBIDDEN_PREDICTOR_COLUMNS),
         "pre_release_numeric": list(PRE_RELEASE_NUMERIC),
         "pre_release_bool": list(PRE_RELEASE_BOOL),
+        "known_person_semantics": "computed separately for each film from prior movies only",
+        "feature_semantics_version": CAST_CREW_FEATURE_SEMANTICS_VERSION,
         "top_genres": list(TOP_GENRES),
     }

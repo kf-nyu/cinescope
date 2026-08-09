@@ -7,10 +7,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pyspark.sql import functions as F
-
 from cinescope.paths import get_paths
 from cinescope.schemas import (
+    CAST_CREW_FEATURE_SEMANTICS_VERSION,
     HIGHLY_RATED_THRESHOLD,
     KNOWN_PERSON_MIN_AVG_RATING,
     KNOWN_PERSON_MIN_MOVIES,
@@ -123,9 +122,7 @@ def run() -> dict:
             broadcast_plan + "\n", encoding="utf-8"
         )
 
-        cast_crew = aggregate_cast_crew_features(
-            movie_principals, history, known_people
-        )
+        cast_crew = aggregate_cast_crew_features(movie_principals, history)
         cast_crew.cache()
         rows_after_agg = cast_crew.count()
         movies_with_features = rows_after_agg
@@ -180,6 +177,7 @@ def run() -> dict:
         duration_s = round(time.perf_counter() - started, 3)
         metrics = {
             "job": "build_cast_crew_features",
+            "feature_semantics_version": CAST_CREW_FEATURE_SEMANTICS_VERSION,
             "completed_at_utc": datetime.now(timezone.utc).isoformat(),
             "spark_version": spark.version,
             "duration_seconds": duration_s,
@@ -247,7 +245,8 @@ def run() -> dict:
             },
             "join_notes": {
                 "movie_id_broadcast": "principals restricted via broadcast of movie tconsts",
-                "known_people_broadcast": "explicit F.broadcast on known-person lookup",
+                "known_people_broadcast": "descriptive full-corpus lookup used only for plan evidence",
+                "known_people_features": "computed per film from strict prior history only",
                 "history_window": "rangeBetween(unboundedPreceding, -1) on start_year",
                 "enriched_join": "left join from movies_ratings to cast_crew_features",
             },

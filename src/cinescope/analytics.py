@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
 
 
@@ -57,8 +57,9 @@ def runtime_bucket_stats(
     bucket_minutes: int = 15,
     min_runtime: int = 40,
     max_runtime: int = 240,
+    min_films: int = 50,
 ) -> DataFrame:
-    """Median rating and volume by runtime bucket (sweet-spot analysis)."""
+    """Median rating and volume by runtime bucket with sample-size control."""
     clipped = movies.filter(
         F.col("runtime_minutes").isNotNull()
         & (F.col("runtime_minutes") >= min_runtime)
@@ -77,6 +78,7 @@ def runtime_bucket_stats(
             F.avg("average_rating").alias("mean_rating"),
             F.sum("num_votes").alias("total_votes"),
         )
+        .filter(F.col("film_count") >= F.lit(min_films))
         .orderBy("runtime_bucket")
     )
 
@@ -125,3 +127,43 @@ def director_prior_correlation(movies: DataFrame) -> float | None:
     )
     value = row["corr"]
     return float(value) if value is not None else None
+
+
+def pre_release_signal_lift(
+    labeled_movies: DataFrame,
+    *,
+    signal_col: str = "director_prior_movie_count_mean",
+    label_col: str = "is_hit",
+    buckets: int = 4,
+) -> DataFrame:
+    """Compare outcome rate across quantile bands of a pre-release signal."""
+    if buckets < 2:
+        raise ValueError("buckets must be at least 2")
+    eligible = labeled_movies.filter(
+        F.col(signal_col).isNotNull() & F.col(label_col).isNotNull()
+    )
+    base_rate = eligible.agg(F.avg(label_col).alias("base_rate")).collect()[0][
+        "base_rate"
+    ]
+    bucketed = eligible.withColumn(
+        "signal_band",
+        F.ntile(buckets).over(Window.orderBy(F.col(signal_col))),
+    )
+    stats = bucketed.groupBy("signal_band").agg(
+        F.count(F.lit(1)).alias("film_count"),
+        F.min(signal_col).alias("signal_min"),
+        F.max(signal_col).alias("signal_max"),
+        F.avg(signal_col).alias("signal_mean"),
+        F.avg(label_col).alias("outcome_rate"),
+    )
+    if base_rate:
+        stats = stats.withColumn(
+            "lift_vs_eligible",
+            F.col("outcome_rate") / F.lit(float(base_rate)),
+        )
+    else:
+        stats = stats.withColumn(
+            "lift_vs_eligible",
+            F.lit(None).cast("double"),
+        )
+    return stats.orderBy("signal_band")

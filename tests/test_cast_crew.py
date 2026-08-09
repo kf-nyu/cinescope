@@ -20,7 +20,6 @@ from pyspark.sql.types import (
 from cinescope.schemas import NAME_BASICS_SCHEMA, TITLE_PRINCIPALS_SCHEMA
 from cinescope.transformations import (
     aggregate_cast_crew_features,
-    build_known_people_lookup,
     build_movies_enriched,
     filter_relevant_principals,
     person_movie_history,
@@ -169,8 +168,7 @@ def test_multiple_roles_and_aggregation_one_row_per_movie(spark):
     movies = _movies(spark)
     principals = restrict_principals_to_movies(_principals(spark), movies)
     hist = person_movie_history(principals, movies)
-    known = build_known_people_lookup(hist)
-    features = aggregate_cast_crew_features(principals, hist, known)
+    features = aggregate_cast_crew_features(principals, hist)
 
     assert features.count() == features.select("tconst").distinct().count()
     later = features.filter(F.col("tconst") == "tt1000003").collect()[0]
@@ -181,13 +179,43 @@ def test_multiple_roles_and_aggregation_one_row_per_movie(spark):
     assert later.principal_count == 2
 
 
+def test_known_director_uses_only_history_before_each_film(spark):
+    """Mark a director known only after their prior record reaches the threshold."""
+    principals = spark.createDataFrame(
+        [
+            ("tt_early", "nm_director", "director"),
+            ("tt_later", "nm_director", "director"),
+        ],
+        ["tconst", "nconst", "category"],
+    )
+    history = spark.createDataFrame(
+        [
+            ("tt_early", "nm_director", 9, 8.0, 90_000, 9),
+            ("tt_later", "nm_director", 10, 8.0, 100_000, 10),
+        ],
+        [
+            "tconst",
+            "nconst",
+            "prior_movie_count",
+            "prior_average_rating",
+            "prior_total_votes",
+            "prior_highly_rated_movie_count",
+        ],
+    )
+
+    features = aggregate_cast_crew_features(principals, history)
+    by_title = {row.tconst: row for row in features.collect()}
+
+    assert by_title["tt_early"].has_known_director is False
+    assert by_title["tt_later"].has_known_director is True
+
+
 def test_movie_with_no_principals_kept_in_enriched(spark):
     """Keep movies without principals in the enriched table with zeroed counts."""
     movies = _movies(spark)
     principals = restrict_principals_to_movies(_principals(spark), movies)
     hist = person_movie_history(principals, movies)
-    known = build_known_people_lookup(hist)
-    features = aggregate_cast_crew_features(principals, hist, known)
+    features = aggregate_cast_crew_features(principals, hist)
     enriched = build_movies_enriched(movies, features)
 
     assert enriched.count() == movies.count()
@@ -205,8 +233,7 @@ def test_cast_crew_validation_unique_tconst(spark):
     movies = _movies(spark)
     principals = restrict_principals_to_movies(_principals(spark), movies)
     hist = person_movie_history(principals, movies)
-    known = build_known_people_lookup(hist)
-    features = aggregate_cast_crew_features(principals, hist, known)
+    features = aggregate_cast_crew_features(principals, hist)
     result = validate_cast_crew_features(features)
     assert result.passed
     assert result.details["distinct_tconst"] == result.details["row_count"]

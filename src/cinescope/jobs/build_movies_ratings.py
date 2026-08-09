@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
 
 from cinescope.paths import get_paths
 from cinescope.schemas import TITLE_BASICS_SCHEMA, TITLE_RATINGS_SCHEMA
@@ -24,9 +24,7 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _read_tsv(spark: SparkSession, path: Path, schema) -> "DataFrame":
-    from pyspark.sql import DataFrame  # noqa: F401
-
+def _read_tsv(spark: SparkSession, path: Path, schema) -> DataFrame:
     return (
         spark.read.option("header", "true")
         .option("sep", "\t")
