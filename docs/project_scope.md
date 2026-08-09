@@ -10,6 +10,8 @@
 
 ## Required
 
+**Audience and standard:** Write the report and presentation as a professional-grade business product for a high-level corporate chief, client, or investor. Lead with decisions, analytical insight, business value, and recommendations. Use technical implementation as supporting evidence rather than presenting a query or code summary.
+
 - IMDb ingestion from official non-commercial datasets
 - Spark ETL with explicit schemas and null/type cleaning
 - Parquet conversion on external SSD storage

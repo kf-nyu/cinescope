@@ -27,6 +27,23 @@ $Color = @{
 $MetricsDir = Join-Path $ProjectFolder "outputs\metrics"
 $ChartsDir = Join-Path $ProjectFolder "outputs\charts\generated"
 $OutputPath = Join-Path $ProjectFolder $OutputName
+$StagedPath = Join-Path ([IO.Path]::GetTempPath()) ("cinescope-" + [guid]::NewGuid().ToString("N") + ".pptx")
+$SlideCount = 0
+$BuildSucceeded = $false
+
+function Assert-OpenXmlPresentation([string]$Path) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        if ($null -eq $archive.GetEntry("[Content_Types].xml") -or
+            $null -eq $archive.GetEntry("ppt/presentation.xml")) {
+            throw "PowerPoint output is missing required Open XML package entries: $Path"
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
 
 function Read-Version2Json([string]$Path) {
     if (-not (Test-Path $Path)) {
@@ -209,7 +226,7 @@ try {
     Add-Text $slide "348,676 rated films  |  100.9M cast and crew relationships" 64 298 740 32 16 $Color.Gold "Bahnschrift" $true | Out-Null
     Add-Text $slide "Isha Dave  |  Kenji Funaki" 64 420 500 28 15 $Color.White "Aptos" | Out-Null
     Add-Text $slide "NYU Big Data  |  Summer 2026" 64 454 500 22 11 $Color.LightGray "Aptos" | Out-Null
-    Add-Notes $slide "ISHA - 0:15. Film decisions are expensive and uncertain. CineScope asks how much useful signal we can extract before release, while also showing the distributed engineering required to build that evidence."
+    Add-Notes $slide "ISHA - 0:15. Film decisions are expensive and uncertain. CineScope examines how much useful signal is available before release and how a scalable pipeline can turn that information into defensible analysis."
 
     # 2. Decision problem
     $slide = New-Slide
@@ -230,11 +247,11 @@ try {
     Add-Text $slide "Rare outcome: about 1.1%" 696 332 170 22 12 $Color.LightGray "Aptos" | Out-Null
     Add-Text $slide "The output is a ranking and research aid, not an automatic greenlight." 52 438 838 34 18 $Color.Coral "Bahnschrift" $true 2 | Out-Null
     Add-Footer $slide 2
-    Add-Notes $slide "ISHA - 0:45. We predict two narrow outcomes. A hit combines IMDb quality and minimum reach; it is not profitability. The awards outcome is any mapped Oscar nomination. In both cases the intended use is ranking projects for review, never automatic approval. Handoff: To show how we made this scalable and methodologically defensible, Kenji will walk through the pipeline and evaluation."
+    Add-Notes $slide "ISHA - 0:45. We predict two narrow outcomes. A hit combines IMDb quality and minimum reach; it is not profitability. The awards outcome is any mapped Oscar nomination. In both cases the intended use is ranking projects for review, never automatic approval. I will first show what the evidence means for a client decision."
 
     # 3. Scale and architecture
     $slide = New-Slide
-    Add-Title $slide "02" "The 100.9M-row relationship table is the workload"
+    Add-Title $slide "05" "The 100.9M-row relationship table is the workload"
     $stats = @(
         @("12.7M", "title records"),
         @("100.9M", "film-person edges"),
@@ -261,12 +278,12 @@ try {
         }
     }
     Add-Text $slide "Local SSD for analytics and ML  |  HDFS + YARN for Dataproc batch ETL" 48 428 844 34 17 $Color.Ink "Bahnschrift" $true 2 | Out-Null
-    Add-Footer $slide 3
+    Add-Footer $slide 6
     Add-Notes $slide "KENJI - 1:20. The final movie table is not the hard part. IMDb stores about 100.9 million principal relationships, so we must restrict, join, order by release year, and aggregate back to film grain. The pipeline uses explicit schemas, bronze and silver Parquet layers, then local analytics and ML. The same ETL jobs run locally or through YARN on Dataproc."
 
     # 4. Spark execution
     $slide = New-Slide $true
-    Add-Title $slide "03" "Spark execution: less movement, reusable storage" $true
+    Add-Title $slide "06" "Spark execution: less movement, reusable storage" $true
     Add-Text $slide "REFERENCE EXECUTION" 50 103 230 20 10 $Color.Gold "Bahnschrift" $true | Out-Null
     $execution = @(
         @("25.3 s", "baseline join"),
@@ -285,12 +302,12 @@ try {
     Add-Text $slide "BroadcastHashJoin [nconst], BuildRight`n  +- 100.9M principal relationships`n  +- BroadcastExchange small lookup" 70 328 462 88 17 $Color.White "Consolas" | Out-Null
     Add-Text $slide "The broadcast lookup demonstrates the optimization. It is isolated from predictive features." 606 288 286 116 23 $Color.White "Bahnschrift SemiBold" $true | Out-Null
     Add-Text $slide "Parquet + Snappy makes repeated column scans practical; no unmeasured speedup claim." 606 410 286 48 13 $Color.LightGray "Aptos" | Out-Null
-    Add-Footer $slide 4 $true
+    Add-Footer $slide 7 $true
     Add-Notes $slide "KENJI - 1:10. We reduced work early by restricting principals to rated movie IDs and materializing reusable Parquet. The physical plan confirms a BroadcastHashJoin for the small demonstration lookup. We do not claim a measured broadcast speedup because we did not run a controlled A/B benchmark. The local and Dataproc timings describe different environments."
 
     # 5. Validity correction
     $slide = New-Slide
-    Add-Title $slide "04" "We corrected future-information leakage before final evaluation"
+    Add-Title $slide "07" "We corrected future-information leakage before final evaluation"
     $steps = @(
         @("1", "POINT-IN-TIME FEATURES", "Known cast/director status now uses only films released earlier."),
         @("2", "STRICT FEATURE CONTRACT", "Outcomes, Oscars, full-career fields, and vote snapshots are rejected."),
@@ -304,12 +321,12 @@ try {
         Add-Text $slide $steps[$index][2] 116 ($top + 27) 760 44 17 $Color.Ink "Aptos" | Out-Null
     }
     Add-Text $slide "July model metrics are superseded. Final values must come from feature-semantics version 2." 116 480 760 26 14 $Color.Coral "Bahnschrift" $true | Out-Null
-    Add-Footer $slide 5
+    Add-Footer $slide 8
     Add-Notes $slide "KENJI - 1:20. Our audit found that the old known-person flags used lifetime ratings and votes, which let future success influence earlier films. We fixed the producer, versioned the corrected silver artifact, removed retrospective vote totals from models, and made notebooks reject stale data. We also replaced random splits and weighted F1 with chronological holdouts and positive-class metrics."
 
     # 6. Models
     $slide = New-Slide
-    Add-Title $slide "05" "Model choice and threshold come from validation years"
+    Add-Title $slide "08" "Model choice and threshold come from validation years"
     $hitAlgorithm = $(if ($null -ne $Hit) { $Hit.selected_candidate.algorithm } else { "PENDING V2 RERUN" })
     $awardsAlgorithm = $(if ($null -ne $Awards) { $Awards.selected_candidate.algorithm } else { "PENDING V2 RERUN" })
     $modelRows = @(
@@ -336,24 +353,24 @@ try {
     Add-ImageOrPlaceholder $slide $HitPrCurve 48 326 408 142 "hit_model_pr_curve.png after corrected rerun"
     Add-ImageOrPlaceholder $slide $AwardsPrCurve 504 326 408 142 "awards_model_pr_curve.png after corrected rerun"
     Add-Text $slide "PR AUC is primary because positives are rare; test years are evaluated once." 48 484 864 24 13 $Color.Coral "Bahnschrift" $true 2 | Out-Null
-    Add-Footer $slide 6
-    Add-Notes $slide "KENJI - 2:10. We compare class-weighted Logistic Regression with GBT. Candidate parameters are selected by validation PR AUC, then a validation threshold sweep chooses the positive-class F1 operating point. Only then do we evaluate later test years. Explain the final table and curves after the v2 rerun. Avoid accuracy and old weighted F1. Handoff: With the technical foundation and corrected evaluation in place, Isha will translate the results into film decisions."
+    Add-Footer $slide 9
+    Add-Notes $slide "KENJI - 2:10. We compare class-weighted Logistic Regression with GBT. Candidate parameters are selected by validation PR AUC, then a validation threshold sweep chooses the positive-class F1 operating point. Only then do we evaluate later test years. Explain the final table and curves after the v2 rerun. Avoid accuracy and old weighted F1. Handoff: With the technical evidence in place, Isha will close with the practical use and limitations."
 
     # 7. Findings: genre and runtime
     $slide = New-Slide
-    Add-Title $slide "06" "Film context changes how ratings should be interpreted"
+    Add-Title $slide "02" "Film context changes how ratings should be interpreted"
     Add-ImageOrPlaceholder $slide $GenreChart 46 104 430 306 "genre_decade_median_rating.png after corrected analytics rerun"
     Add-ImageOrPlaceholder $slide $RuntimeChart 494 104 420 306 "runtime_profile.png after corrected analytics rerun"
     Add-Text $slide "GENRE + ERA" 56 426 160 18 10 $Color.Teal "Bahnschrift" $true | Out-Null
     Add-Text $slide "Benchmark projects against comparable periods, not one timeless genre average." 56 452 382 44 16 $Color.Ink "Aptos" | Out-Null
     Add-Text $slide "RUNTIME PROFILE" 506 426 180 18 10 $Color.Coral "Bahnschrift" $true | Out-Null
     Add-Text $slide "Volume and rating differ by runtime, but the chart does not prove a causal sweet spot." 506 452 388 44 16 $Color.Ink "Aptos" | Out-Null
-    Add-Footer $slide 7
+    Add-Footer $slide 3
     Add-Notes $slide "ISHA - 1:15. Genre ratings move across decades, so context matters. Runtime shows where films cluster and how ratings vary, but it is descriptive. We should not tell a studio that adding or removing minutes causes success."
 
     # 8. Findings: people and discovery
     $slide = New-Slide
-    Add-Title $slide "07" "Creative history is useful signal, not a verdict"
+    Add-Title $slide "03" "Creative history is useful signal, not a verdict"
     Add-ImageOrPlaceholder $slide $DirectorChart 46 104 430 286 "director_prior_vs_rating.png after corrected analytics rerun"
     $corr = $(if ($null -ne $Analytics) { Format-Metric $Analytics.director_prior_rating_corr } else { "PENDING V2" })
     $niche = $(if ($null -ne $Analytics) { [string]$Analytics.anomaly_count_rating_ge_8_bottom_decile_votes } else { "PENDING V2" })
@@ -365,12 +382,12 @@ try {
     Add-Text $slide $niche 526 272 350 38 28 $Color.Ink "Bahnschrift SemiBold" $true | Out-Null
     Add-ImageOrPlaceholder $slide $SignalLiftChart 504 344 408 112 "pre_release_signal_lift.png after corrected analytics rerun"
     Add-Text $slide "Association is not causation. Use these signals to prioritize diligence and discovery." 48 470 864 30 15 $Color.Coral "Bahnschrift" $true 2 | Out-Null
-    Add-Footer $slide 8
+    Add-Footer $slide 4
     Add-Notes $slide "ISHA - 1:15. Director prior rating has a moderate association with the next film, but stronger directors may also receive better scripts, budgets, and distribution. High-rating, low-vote titles are niche discovery candidates, not proof of manipulation. The final lift chart uses prior experience rather than the circular vote-quartile analysis."
 
     # 9. Recommendations
     $slide = New-Slide
-    Add-Title $slide "08" "Use CineScope to shortlist, then add human and economic context"
+    Add-Title $slide "04" "How CineScope should be used"
     Add-Text $slide "RECOMMEND" 50 104 160 20 10 $Color.Teal "Bahnschrift" $true | Out-Null
     Add-Bullets $slide @(
         "Rank projects for deeper creative and market review",
@@ -386,17 +403,17 @@ try {
         "Correlations do not establish causal creative decisions"
     ) 526 137 386 17 66 $Color.Ink $Color.Coral
     Add-Panel $slide 50 418 862 60 $Color.Ink $Color.Ink | Out-Null
-    Add-Text $slide "Next-value data: budget, marketing, distribution, release footprint, and revenue" 74 436 814 24 16 $Color.White "Bahnschrift" $true 2 | Out-Null
-    Add-Footer $slide 9
-    Add-Notes $slide "ISHA - 1:30. The practical use is ranking and shortlisting. Different teams can choose different thresholds. But we must be explicit about what is missing: IMDb is not revenue, ratings are retrospective, and correlations are not causal. The next most valuable enrichment is economic and distribution data."
+    Add-Text $slide "Next step: add economic data, then validate predictions on future releases" 74 436 814 24 16 $Color.White "Bahnschrift" $true 2 | Out-Null
+    Add-Footer $slide 5
+    Add-Notes $slide "ISHA - 1:30. The practical use is ranking and shortlisting, with human review retained. Different use cases can choose different thresholds. We must also be explicit about what is missing: IMDb is not revenue, ratings are retrospective, and correlations are not causal. The next useful extension is economic data and prospective validation. Handoff: Kenji will now show why the analysis is scalable and methodologically defensible."
 
     # 10. Close
     $slide = New-Slide $true
     Add-Title $slide "09" "Three takeaways" $true
     $takeaways = @(
-        @("01", "BIG DATA", "The engineering challenge is the 100.9M-row relationship graph and temporal aggregation."),
-        @("02", "VALIDITY", "Point-in-time features and chronological evaluation matter more than preserving old headline metrics."),
-        @("03", "DECISION USE", "CineScope is a transparent ranking aid, not an automatic greenlight system.")
+        @("01", "BIG DATA", "The 100.9M-row relationship graph requires distributed joins and temporal aggregation."),
+        @("02", "ANALYSIS", "Point-in-time features and chronological evaluation make the findings more credible."),
+        @("03", "USE", "CineScope supports ranking and research; it does not replace creative or financial judgment.")
     )
     for ($index = 0; $index -lt $takeaways.Count; $index++) {
         $top = 116 + ($index * 108)
@@ -406,7 +423,7 @@ try {
     }
     Add-Text $slide "Questions?" 56 462 836 42 30 $Color.Mist "Bahnschrift SemiBold" $true 2 | Out-Null
     Add-Footer $slide 10 $true
-    Add-Notes $slide "ISHA - 1:00. Close on three points: the relationship graph makes this a real big-data workload; correcting validity is a strength, even if metrics decline; and the product is a transparent decision aid. Thank the audience and open three minutes of Q&A."
+    Add-Notes $slide "ISHA - 1:00. Close on three points: the relationship graph is a genuine big-data workload, methodological corrections make the analysis more credible, and the result is a transparent ranking aid rather than an automatic decision system. Thank the audience and open three minutes of Q&A."
 
     # 11. Appendix: cohorts and labels
     $slide = New-Slide
@@ -457,13 +474,20 @@ try {
     Add-Footer $slide 14
     Add-Notes $slide "Q&A. Use this slide for data bias, film-population questions, timestamp limitations, and why the system does not predict box office."
 
-    if (Test-Path $OutputPath) {
-        Remove-Item $OutputPath -Force
+    # Business-first order: decision and findings, recommendation, then technical proof.
+    $desiredOrder = @(1, 2, 7, 8, 9, 3, 4, 5, 6, 10, 11, 12, 13, 14)
+    $slideIds = @()
+    foreach ($originalIndex in $desiredOrder) {
+        $slideIds += $Presentation.Slides.Item($originalIndex).SlideID
     }
-    $Presentation.SaveAs($OutputPath, 24)
-    Write-Output "Wrote $OutputPath"
-    Write-Output "Slides: $($Presentation.Slides.Count)"
-    Write-Output "Version 2 metrics loaded: analytics=$($null -ne $Analytics), hit=$($null -ne $Hit), awards=$($null -ne $Awards)"
+    for ($targetIndex = 1; $targetIndex -le $slideIds.Count; $targetIndex++) {
+        $Presentation.Slides.FindBySlideID($slideIds[$targetIndex - 1]).MoveTo($targetIndex)
+    }
+
+    $Presentation.SaveAs($StagedPath, 24)
+    Assert-OpenXmlPresentation $StagedPath
+    $SlideCount = $Presentation.Slides.Count
+    $BuildSucceeded = $true
 }
 finally {
     if ($null -ne $Presentation) {
@@ -486,4 +510,16 @@ finally {
     }
     [GC]::Collect()
     [GC]::WaitForPendingFinalizers()
+}
+
+if ($BuildSucceeded) {
+    if (Test-Path $OutputPath) {
+        Remove-Item $OutputPath -Force
+    }
+    Copy-Item $StagedPath $OutputPath
+    Assert-OpenXmlPresentation $OutputPath
+    Remove-Item $StagedPath -Force
+    Write-Output "Wrote $OutputPath"
+    Write-Output "Slides: $SlideCount"
+    Write-Output "Version 2 metrics loaded: analytics=$($null -ne $Analytics), hit=$($null -ne $Hit), awards=$($null -ne $Awards)"
 }

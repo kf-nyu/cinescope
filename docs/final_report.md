@@ -23,6 +23,30 @@ The final corrected results are:
 
 The business recommendation is to use CineScope as a ranking and research aid, not as an automatic greenlight system. Its scores can prioritize projects for deeper review and make tradeoffs explicit, but they do not include production budget, marketing spend, distribution, release strategy, or box-office revenue. Those omitted variables are central to commercial success.
 
+## Project Overview and Key Takeaways
+
+CineScope converts fragmented film, audience, creative-team, and awards records into three useful analytical outputs:
+
+| Analytical output | Potential use | Result |
+|---|---|---|
+| Project screening | Prioritize projects for creative, market, and prestige review | Ranked audience-reception and Oscar-recognition scores |
+| Portfolio benchmarking | Compare projects with relevant genre and era cohorts | Contextual rating, reach, and runtime profiles |
+| Catalog discovery | Surface highly rated films with limited mainstream reach | Niche-candidate review queue |
+
+### Findings and Practical Implications
+
+| Finding | Practical implication | Appropriate use |
+|---|---|---|
+| Genre performance changes across decades | Timeless genre averages can mislead | Benchmark within comparable eras and audience contexts |
+| Creative-team history contains signal | Prior work can improve screening discipline | Use track record as one diligence input, never as a veto |
+| Runtime patterns are descriptive, not causal | Editing to an aggregate "sweet spot" is not evidence-based | Evaluate runtime within genre, format, and positioning |
+| Rare outcomes require threshold choices | One cutoff cannot serve every business team | Set thresholds according to the cost of missed opportunities and false alarms |
+| IMDb reception is not financial return | Current scores cannot support profitability conclusions | Add budget, marketing, distribution, and revenue before ROI analysis |
+
+### Appropriate Scope
+
+The current system is best understood as an analytical prototype and prioritization aid. It can help organize evidence and focus attention, but its scores should be interpreted alongside comparable-film context, feature explanations, and explicit data limitations.
+
 ## 1. Business Problem
 
 Film decisions are made under uncertainty. Before release, decision-makers may know a project's genre, planned runtime, credited creative team, release period, and the team's previous work. They do not yet know the film's eventual IMDb rating, vote count, or awards outcome. CineScope asks three focused questions:
@@ -34,6 +58,10 @@ Film decisions are made under uncertainty. Before release, decision-makers may k
 The word "hit" has a narrow project definition. It means an IMDb average rating of at least 7.0 and at least 1,000 votes. This combines perceived quality with a minimum level of audience reach. It does not mean profitability, box-office revenue, return on investment, or streaming retention. The report therefore uses "audience-reception hit" whenever the distinction matters.
 
 Oscar recognition is defined as at least one mapped nomination. Wins and Best Picture outcomes are valuable descriptive fields, but they are too sparse to serve as the primary rare-event model under the project deadline.
+
+### Analytical Objectives
+
+The analysis is useful when it supports a more disciplined shortlist, explains why a title receives attention, and makes threshold tradeoffs visible. A high aggregate model score is not sufficient by itself. For this reason, CineScope emphasizes chronological testing, rare-event metrics, and transparent interpretation.
 
 ## 2. Why Big-Data Technology Is Required
 
@@ -179,14 +207,34 @@ Training rows receive inverse-frequency class weights so positive and negative c
 
 PR AUC is the primary ranking metric because both outcomes are rare. ROC AUC is retained for comparability, while precision, recall, and positive-class F1 describe behavior at the chosen operating threshold. Overall accuracy and frequency-weighted F1 are not headline results because the large negative class can make them look strong even when most positive films are missed.
 
-## 7. Business Recommendations
+## 7. Business Recommendations and Future Work
 
-1. **Use scores for ranking, not automatic approval.** A model score can prioritize projects for human review, but it should not independently approve or reject a film.
-2. **Choose thresholds for the decision context.** A studio screening hundreds of projects may prefer higher recall and accept more false positives. A limited prestige-marketing budget may prefer higher precision.
-3. **Benchmark within genre and era.** Genre patterns change over time, so current projects should be compared with relevant cohorts.
-4. **Treat creative-team history as supporting evidence.** Director and cast track records can inform diligence, but budget, script quality, studio access, and selection effects remain important confounders.
-5. **Review niche candidates manually.** High ratings with limited reach can identify catalog opportunities, but small voting populations make estimates less stable.
-6. **Add economic data before making commercial claims.** Budget, marketing, distribution, release footprint, and revenue are required to model profitability.
+### Recommended Use
+
+1. **Use scores for ranking, not automatic approval.** The models can prioritize projects for human review but should not independently approve or reject a film.
+2. **Keep the two outcomes separate.** Audience reception and Oscar recognition have different labels, prevalence, and decision costs.
+3. **Choose thresholds by use case.** A broad screening process may favor recall, while a limited awards-focused review may favor precision.
+4. **Show context with every score.** Include comparable genre-era cohorts, important features, and known limitations.
+
+### Analytical Applications
+
+5. **Benchmark within genre and era.** Avoid comparing a current project with one timeless industry average.
+6. **Treat creative-team history as supporting evidence.** Use prior work to focus diligence while recognizing budget, script, access, and selection effects.
+7. **Review niche candidates manually.** Send high-rating, low-reach titles to editorial or acquisition specialists rather than labeling them anomalous in a negative sense.
+
+### Future Development
+
+8. **Add economic and distribution data before making commercial claims.** Budget, marketing, release footprint, distribution channel, revenue, and streaming engagement are required before modeling ROI.
+9. **Validate prospectively.** Score future release cohorts before outcomes are known and compare predictions with later audience and award results.
+10. **Evaluate stability over time.** Add rolling temporal validation, calibration checks, and monitoring before considering operational use.
+
+### Development Roadmap
+
+| Stage | Deliverable | Purpose |
+|---|---|---|
+| Current | Transparent ranking prototype and analytical report | Demonstrate scalable analysis and defensible evaluation |
+| Next | Economic data enrichment and prospective score tracking | Test whether broader business outcomes can be modeled |
+| Later | Monitoring, repeatable refreshes, and workflow integration | Assess operational feasibility |
 
 ## 8. Limitations
 
@@ -200,6 +248,8 @@ PR AUC is the primary ranking metric because both outcomes are rare. ROC AUC is 
 - Class weighting and threshold choice encode business preferences and must be revisited for a real deployment.
 - The final evaluation uses one chronological holdout design. Broader rolling-origin validation would provide a stronger estimate of performance stability.
 - The project is an analytical prototype. It does not include monitoring, scheduled retraining, model calibration, an API, or a production decision workflow.
+
+These limitations define which conclusions the current evidence can support and which questions require additional data or validation.
 
 ## 9. Performance Engineering and Reproducibility
 
@@ -227,7 +277,9 @@ Before submission, the final report and presentation must be reconciled against 
 
 CineScope demonstrates an end-to-end big-data workflow in which distributed processing is justified by the source relationships and temporal feature construction, not merely by the final row count. The project integrates IMDb and Oscar data, materializes reusable Parquet tables, demonstrates a broadcast join, computes point-in-time person history, and evaluates rare-event classifiers on later film cohorts.
 
-Its main practical lesson is that honest validation matters as much as model choice. Removing future-derived features, separating validation from test decisions, and reporting positive-class metrics produces a more credible business tool even if headline performance declines. The resulting platform is best positioned as a transparent ranking and research system that can be strengthened with budget, marketing, distribution, and timestamped audience data.
+Its main practical lesson is that honest validation matters as much as model choice. Removing future-derived features, separating validation from test decisions, and reporting positive-class metrics produces a more credible business tool even if headline performance declines.
+
+CineScope can organize evidence, rank opportunities, and make screening criteria more consistent, but it should not allocate capital or replace creative judgment. The most useful next steps are to add economic and distribution data, validate predictions prospectively, and test performance stability over time. These additions would extend the current analytical prototype toward a broader film-planning tool while preserving its transparent and evidence-based design.
 
 ## References
 
