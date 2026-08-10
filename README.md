@@ -19,7 +19,7 @@ title.basics + title.ratings → bronze/movies_ratings
         ↓
 title.principals + name.basics
   + historical person reputation (pre-release only)
-  + broadcast known-person lookup
+        + point-in-time known-person flags
         ↓
 silver/cast_crew_features (1 row per movie)
         ↓
@@ -249,7 +249,9 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 - **Row explosion:** `title.principals` is multi-row per title; aggregate back to one row per `tconst`.
 - **Roles kept:** actor, actress, director, writer, producer, composer, cinematographer, editor.
 - **Leakage control:** priors use only movies with `start_year` strictly before the current film.
-- **Known-person broadcast:** data-derived lookup; explicit `F.broadcast`.
+- **Point-in-time known person:** model features use only prior movie count and prior mean rating available at that film.
+- **Broadcast evidence:** a separate full-corpus lookup demonstrates explicit `F.broadcast`; it never enters model features.
+- **Vote snapshots:** prior vote totals remain available for retrospective analytics but are excluded from predictive models because IMDb does not provide historical vote snapshots.
 - **Enriched table:** left join so movies without principals are retained.
 
 ## Generated outputs
@@ -258,7 +260,7 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 
 **Local repo `outputs/` (machine-specific; gitignored metrics/plans/logs):** JSON metrics, Spark plans, and charts under `outputs/charts/generated/`.
 
-**Notebooks (local Spark):** after silver tables exist, run `02_core_analytics`, `03_train_hit_model`, `04_train_awards_model`.
+**Notebooks (local Spark):** after silver tables exist, run `02_core_analytics`, `03_train_hit_model`, `04_train_awards_model`. The notebooks reject cast/crew artifacts created before feature-semantics version 2.
 
 ## Safety warnings
 
@@ -271,18 +273,23 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 **Done**
 - IMDb + Oscars ETL (local + Dataproc batch), cast/crew features, awards enrichment, unit tests
 - Dataproc full pipeline ≈ **23 min** (ETL only — no analytics/MLlib on the cluster)
-- Local notebook `02_core_analytics` — proposal §2.3 insights + charts
-- Local notebooks `03` / `04` — provisional **GBT** hit + awards models (untuned; default threshold ≈0.5)
+- Point-in-time known cast/director semantics and strict model feature exclusions
+- Local notebook `02_core_analytics` — five non-circular findings, label sensitivity, and charts
+- Local notebooks `03` / `04` — weighted Logistic Regression / GBT comparison, chronological validation, PR curves, and validation-selected thresholds
 
 **In progress**
-- Layer 5: add **logistic regression**, hyperparameter tuning, decision-threshold / PR sweep (labels still provisional)
+- Rerun cast/crew, Oscar enrichment, analytics, and both models against the full reference dataset
+- Replace the superseded July 31 model metrics with feature-semantics version 2 results
+- Final business report and presentation
 
 **Runtime**
 - Dataproc = ETL batch only  
 - Analytics / MLlib = local Spark notebooks (not JupyterHub)
 
-**Not started yet**
-- Report and slides (after Layer 5 is locked)
+**Evidence status**
+- The July 31 ETL metrics and physical plans remain valid reference evidence.
+- The July 31 model metrics are superseded because their known-person flags used full-career outcomes.
+- Final report and slide metrics must come from the corrected chronological rerun.
 
 ## Out of scope (for now)
 

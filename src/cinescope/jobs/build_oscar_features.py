@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from cinescope.paths import get_paths
-from cinescope.schemas import OSCARS_NOMINATIONS_SCHEMA
+from cinescope.schemas import (
+    CAST_CREW_FEATURE_SEMANTICS_VERSION,
+    OSCARS_NOMINATIONS_SCHEMA,
+)
+from cinescope.ml.features import validate_feature_artifact_metadata
 from cinescope.spark_session import build_spark_session
 from cinescope.transformations import (
     aggregate_movie_oscar_features,
@@ -37,6 +41,17 @@ def run() -> dict:
 
     oscars_path = paths.raw_oscars_dir / "oscars.csv"
     movies_path = paths.movies_enriched_dir
+    feature_semantics_version = None
+    if movies_path.exists():
+        cast_metrics_path = metrics_dir / "cast_crew_metrics.json"
+        if not cast_metrics_path.is_file():
+            raise RuntimeError(
+                "movies_enriched exists without cast_crew_metrics.json; "
+                "rerun the corrected cast/crew job"
+            )
+        cast_metadata = json.loads(cast_metrics_path.read_text(encoding="utf-8"))
+        validate_feature_artifact_metadata(cast_metadata)
+        feature_semantics_version = CAST_CREW_FEATURE_SEMANTICS_VERSION
     if not movies_path.exists():
         # Fall back to bronze if cast/crew enriched table is absent.
         movies_path = paths.movies_ratings_dir
@@ -133,6 +148,7 @@ def run() -> dict:
         duration_s = round(time.perf_counter() - started, 3)
         metrics = {
             "job": "build_oscar_features",
+            "feature_semantics_version": feature_semantics_version,
             "completed_at_utc": datetime.now(timezone.utc).isoformat(),
             "spark_version": spark.version,
             "duration_seconds": duration_s,

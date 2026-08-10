@@ -8,6 +8,7 @@ from pyspark.sql import types as T
 
 from cinescope.analytics import (
     genre_decade_stats,
+    pre_release_signal_lift,
     rating_anomalies,
     runtime_bucket_stats,
 )
@@ -72,7 +73,9 @@ def test_runtime_buckets(spark):
     """Runtime bucketing groups films into fixed-width bins."""
     buckets = {
         r["runtime_bucket"]: r["film_count"]
-        for r in runtime_bucket_stats(_movies(spark), bucket_minutes=15).collect()
+        for r in runtime_bucket_stats(
+            _movies(spark), bucket_minutes=15, min_films=1
+        ).collect()
     }
     assert 90 in buckets or 105 in buckets
 
@@ -94,3 +97,21 @@ def test_hit_label_and_genre_flags(spark):
     assert rows["tt1"]["is_hit"] == 0  # high rating but low votes
     assert rows["tt2"]["genre_drama"] == 1
     assert HIT_RATING_MIN == 7.0 and HIT_VOTES_MIN == 1000
+
+
+def test_pre_release_signal_lift_uses_only_supplied_signal_and_label(spark):
+    """Report higher lift when the upper pre-release signal band has more hits."""
+    labeled = spark.createDataFrame(
+        [
+            (0.0, 0),
+            (1.0, 0),
+            (10.0, 1),
+            (20.0, 1),
+        ],
+        ["director_prior_movie_count_mean", "is_hit"],
+    )
+    rows = pre_release_signal_lift(labeled, buckets=2).collect()
+
+    assert len(rows) == 2
+    assert rows[1].outcome_rate > rows[0].outcome_rate
+    assert rows[1].lift_vs_eligible > rows[0].lift_vs_eligible

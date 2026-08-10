@@ -75,6 +75,9 @@ RELEVANT_PRINCIPAL_CATEGORIES = (
 
 CAST_CATEGORIES = ("actor", "actress")
 
+# Version 2 replaces full-career known-person flags with point-in-time flags.
+CAST_CREW_FEATURE_SEMANTICS_VERSION = 2
+
 # Highly rated prior movie threshold (documented).
 HIGHLY_RATED_THRESHOLD = 7.0
 

@@ -1,4 +1,4 @@
-.PHONY: setup setup-hpc init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars pipeline clean-generated clean-hpc
+.PHONY: setup setup-hpc init-storage validate-storage download download-oscars inspect inspect-counts test baseline cast-crew enriched oscars pipeline final-artifacts validate-final clean-generated clean-hpc
 
 ROOT_DIR := $(shell pwd)
 PYTHON := $(ROOT_DIR)/.venv/bin/python
@@ -55,6 +55,15 @@ oscars:
 pipeline:
 	bash scripts/run_pipeline.sh
 
+# Local Spark only: regenerate corrected silver outputs, execute notebooks 02-04,
+# and validate versioned metrics. Report placeholders remain allowed at this stage.
+final-artifacts:
+	bash scripts/run_final_artifacts.sh
+
+# Submission gate: requires corrected metrics/charts and no FINAL placeholders.
+validate-final:
+	$(PYTHON) scripts/validate_final_artifacts.py --report outputs/report/CineScope_Final_Report.md
+
 clean-generated:
 	rm -rf outputs/logs/* \
 		outputs/metrics/baseline_metrics.json \
@@ -64,7 +73,9 @@ clean-generated:
 		outputs/plans/cast_crew_plan.txt \
 		outputs/plans/known_people_broadcast_plan.txt \
 		outputs/plans/oscar_features_plan.txt \
-		outputs/charts/generated
+		outputs/charts/generated \
+		outputs/notebooks \
+		outputs/report
 	@echo "Cleaned generated local artifacts. Raw IMDb / Parquet on the SSD was not deleted."
 
 # Wipe this account's CineScope HDFS tree + /tmp scratch on Dataproc.

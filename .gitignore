@@ -20,6 +20,8 @@ outputs/metrics/*
 outputs/plans/*
 !outputs/plans/.gitkeep
 outputs/charts/generated/
+outputs/notebooks/
+outputs/report/
 *.log
 
 # macOS

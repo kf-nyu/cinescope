@@ -271,7 +271,7 @@ def attach_known_people(
 
 
 def aggregate_cast_crew_features(
-    principals: DataFrame, person_history: DataFrame, known_people: DataFrame
+    principals: DataFrame, person_history: DataFrame
 ) -> DataFrame:
     """Aggregate person-level history to exactly one row per movie."""
     enriched = (
@@ -284,8 +284,15 @@ def aggregate_cast_crew_features(
             "prior_total_votes",
             "prior_highly_rated_movie_count",
         ), on=["tconst", "nconst"], how="left")
+        .withColumn(
+            "is_known_person",
+            (F.col("prior_movie_count") >= F.lit(KNOWN_PERSON_MIN_MOVIES))
+            & (
+                F.col("prior_average_rating")
+                >= F.lit(KNOWN_PERSON_MIN_AVG_RATING)
+            ),
+        )
     )
-    enriched = attach_known_people(enriched, known_people)
 
     is_cast = F.col("category").isin(list(CAST_CATEGORIES))
     is_director = F.col("category") == "director"
