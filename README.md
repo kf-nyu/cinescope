@@ -4,7 +4,7 @@
 
 PySpark pipeline for IMDb film analytics (NYU Big Data course project).
 
-Same GitHub repository for **local laptops** and **NYU Dataproc (HDFS + YARN)**. Only `.env` changes per machine — never commit `.env`.
+Same GitHub repository for **local laptops** and **NYU Dataproc (HDFS + YARN)**. Only `.env` changes per machine. Never commit `.env`.
 
 ## Summary
 
@@ -44,13 +44,13 @@ silver/movies_awards_enriched
 |---|---|
 | **Git repo** | Source, tests, notebooks, docs (no large data) |
 | **`CINESCOPE_DATA_ROOT`** | Raw IMDb/Oscars, Parquet, warehouse/checkpoints |
-| **`SPARK_LOCAL_DIR`** | Spark shuffle scratch — always a **local** filesystem path |
+| **`SPARK_LOCAL_DIR`** | Spark shuffle scratch; always a **local** filesystem path |
 
 Large data must never live inside the Git repository. Do not commit `.env`, logs, or machine-specific metrics/plans.
 
 ---
 
-## Getting started — Local (laptop / desktop)
+## Getting started: Local laptop or desktop
 
 ### Prerequisites
 
@@ -77,10 +77,10 @@ export PYSPARK_DRIVER_PYTHON="$PWD/.venv/bin/python"
 
 ```bash
 cp .env.example .env
-# edit paths for your machine — never commit .env
+# Edit paths for your machine. Never commit .env.
 ```
 
-**Option A — external volume** under `/Volumes/...`:
+**Option A: external volume** under `/Volumes/...`:
 
 ```bash
 CINESCOPE_STORAGE_BACKEND=local
@@ -93,7 +93,7 @@ SPARK_CHECKPOINT_DIR="/Volumes/YourVolumeName/cinescope-data/checkpoints"
 CINESCOPE_MIN_FREE_GB=200
 ```
 
-**Option B — plain home directory** (no external drive):
+**Option B: plain home directory** (no external drive):
 
 ```bash
 CINESCOPE_STORAGE_BACKEND=local
@@ -124,7 +124,7 @@ Or one combined run with a full console log: `make pipeline` → `outputs/logs/p
 
 ---
 
-## Getting started — NYU HPC (Dataproc / HDFS)
+## Getting started: NYU HPC (Dataproc / HDFS)
 
 Same repository. On Dataproc your login is `netid_nyu_edu`; the short NetID is written into `.env` automatically. More detail: [`deploy/hpc/README.md`](deploy/hpc/README.md). **Local Mac does not need a NetID** (use `.env.example` instead).
 
@@ -219,7 +219,7 @@ bash scripts/cleanup_hpc.sh --yes
 bash scripts/cleanup_hpc.sh --yes --remove-clone
 ```
 
-This only removes `…/cinescope-data` under the configured HDFS user plus local scratch for that NetID — not the whole HDFS home.
+This only removes the `cinescope-data` directory under the configured HDFS user plus local scratch for that NetID. It does not remove the whole HDFS home.
 
 ---
 
@@ -229,10 +229,10 @@ Safe to publish:
 
 - Source under `src/`, tests, fixtures, Makefile, generic `.env*.example`, docs that use placeholders
 
-Keep private (gitignored — do not force-add):
+Keep private and do not force-add:
 
 - `.env` (NetID, local absolute paths)
-- `docs/internal/` (local planning notes — not published)
+- `docs/internal/` (local planning notes, not published)
 - `outputs/logs/`, `outputs/metrics/*.json`, `outputs/plans/*.txt` (often contain absolute home/volume paths)
 - Notebook **outputs** (re-run locally; committed notebooks should be output-cleared)
 - `.venv/`

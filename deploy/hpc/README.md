@@ -47,7 +47,7 @@ hdfs:///user/${CINESCOPE_HDFS_USER}/cinescope-data
 
 ## Run
 
-Preferred — one command, full console log saved under `outputs/logs/`:
+Preferred: one command, with the full console log saved under `outputs/logs/`:
 
 ```bash
 make pipeline
@@ -114,7 +114,7 @@ What is removed:
 | Download staging | `/tmp/cinescope-download-<netid>` |
 | Repo run artifacts | `outputs/logs`, metrics JSON, plan texts |
 
-Optional — also delete the clone after cleanup:
+Optional: also delete the clone after cleanup:
 
 ```bash
 bash scripts/cleanup_hpc.sh --yes --remove-clone

@@ -58,7 +58,7 @@
 - Franchise analysis
 - Cloud execution (GCP / Azure)
 
-## Next
+## Final status
 
 - Rerun cast/crew and Oscar jobs to publish feature-semantics version 2 silver tables
 - Execute notebooks `02`–`04` and lock corrected metrics and charts
