@@ -70,6 +70,11 @@ class FinalArtifactContractTests(unittest.TestCase):
                 "threshold_selection": {
                     "source": "validation",
                     "selected": {"threshold": 0.4},
+                    "sweep": [
+                        {"threshold": 0.2},
+                        {"threshold": 0.4},
+                        {"threshold": 0.6},
+                    ],
                 },
                 "test_metrics": {
                     "pr_auc": 0.5,
@@ -110,7 +115,6 @@ class FinalArtifactContractTests(unittest.TestCase):
                 any("forbidden features" in error for error in errors),
                 errors,
             )
-
 
 if __name__ == "__main__":
     unittest.main()

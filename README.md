@@ -4,7 +4,7 @@
 
 PySpark pipeline for IMDb film analytics (NYU Big Data course project).
 
-Same GitHub repository for **local laptops** and **NYU Dataproc (HDFS + YARN)**. Only `.env` changes per machine — never commit `.env`.
+Same GitHub repository for **local laptops** and **NYU Dataproc (HDFS + YARN)**. Only `.env` changes per machine. Never commit `.env`.
 
 ## Summary
 
@@ -44,13 +44,13 @@ silver/movies_awards_enriched
 |---|---|
 | **Git repo** | Source, tests, notebooks, docs (no large data) |
 | **`CINESCOPE_DATA_ROOT`** | Raw IMDb/Oscars, Parquet, warehouse/checkpoints |
-| **`SPARK_LOCAL_DIR`** | Spark shuffle scratch — always a **local** filesystem path |
+| **`SPARK_LOCAL_DIR`** | Spark shuffle scratch; always a **local** filesystem path |
 
 Large data must never live inside the Git repository. Do not commit `.env`, logs, or machine-specific metrics/plans.
 
 ---
 
-## Getting started — Local (laptop / desktop)
+## Getting started: Local laptop or desktop
 
 ### Prerequisites
 
@@ -77,10 +77,10 @@ export PYSPARK_DRIVER_PYTHON="$PWD/.venv/bin/python"
 
 ```bash
 cp .env.example .env
-# edit paths for your machine — never commit .env
+# Edit paths for your machine. Never commit .env.
 ```
 
-**Option A — external volume** under `/Volumes/...`:
+**Option A: external volume** under `/Volumes/...`:
 
 ```bash
 CINESCOPE_STORAGE_BACKEND=local
@@ -93,7 +93,7 @@ SPARK_CHECKPOINT_DIR="/Volumes/YourVolumeName/cinescope-data/checkpoints"
 CINESCOPE_MIN_FREE_GB=200
 ```
 
-**Option B — plain home directory** (no external drive):
+**Option B: plain home directory** (no external drive):
 
 ```bash
 CINESCOPE_STORAGE_BACKEND=local
@@ -124,7 +124,7 @@ Or one combined run with a full console log: `make pipeline` → `outputs/logs/p
 
 ---
 
-## Getting started — NYU HPC (Dataproc / HDFS)
+## Getting started: NYU HPC (Dataproc / HDFS)
 
 Same repository. On Dataproc your login is `netid_nyu_edu`; the short NetID is written into `.env` automatically. More detail: [`deploy/hpc/README.md`](deploy/hpc/README.md). **Local Mac does not need a NetID** (use `.env.example` instead).
 
@@ -219,7 +219,7 @@ bash scripts/cleanup_hpc.sh --yes
 bash scripts/cleanup_hpc.sh --yes --remove-clone
 ```
 
-This only removes `…/cinescope-data` under the configured HDFS user plus local scratch for that NetID — not the whole HDFS home.
+This only removes the `cinescope-data` directory under the configured HDFS user plus local scratch for that NetID. It does not remove the whole HDFS home.
 
 ---
 
@@ -229,10 +229,10 @@ Safe to publish:
 
 - Source under `src/`, tests, fixtures, Makefile, generic `.env*.example`, docs that use placeholders
 
-Keep private (gitignored — do not force-add):
+Keep private and do not force-add:
 
 - `.env` (NetID, local absolute paths)
-- `docs/internal/` (local planning notes — not published)
+- `docs/internal/` (local planning notes, not published)
 - `outputs/logs/`, `outputs/metrics/*.json`, `outputs/plans/*.txt` (often contain absolute home/volume paths)
 - Notebook **outputs** (re-run locally; committed notebooks should be output-cleared)
 - `.venv/`
@@ -272,24 +272,21 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 
 **Done**
 - IMDb + Oscars ETL (local + Dataproc batch), cast/crew features, awards enrichment, unit tests
-- Dataproc full pipeline ≈ **23 min** (ETL only — no analytics/MLlib on the cluster)
+- Dataproc full pipeline: approximately **23 minutes** (ETL only, with no analytics or MLlib on the cluster)
 - Point-in-time known cast/director semantics and strict model feature exclusions
-- Local notebook `02_core_analytics` — five non-circular findings, label sensitivity, and charts
-- Local notebooks `03` / `04` — weighted Logistic Regression / GBT comparison, chronological validation, PR curves, and validation-selected thresholds
-
-**In progress**
-- Rerun cast/crew, Oscar enrichment, analytics, and both models against the full reference dataset
-- Replace the superseded July 31 model metrics with feature-semantics version 2 results
-- Final business report and presentation
+- Local notebook `02_core_analytics`: five non-circular findings, label sensitivity, and charts
+- Local notebooks `03` and `04`: weighted Logistic Regression and GBT comparison, chronological validation, PR curves, and validation-selected thresholds
+- Final reference run completed with **50 passing tests** and 348,676 rated films
+- Final business report and 12-minute presentation completed
 
 **Runtime**
 - Dataproc = ETL batch only  
 - Analytics / MLlib = local Spark notebooks (not JupyterHub)
 
 **Evidence status**
-- The July 31 ETL metrics and physical plans remain valid reference evidence.
-- The July 31 model metrics are superseded because their known-person flags used full-career outcomes.
-- Final report and slide metrics must come from the corrected chronological rerun.
+- Final run summary: [`docs/execution_evidence.md`](docs/execution_evidence.md)
+- Generated JSON, plans, logs, charts, and executed notebooks are kept outside Git because they contain local paths and reproducible output.
+- The July 31 model metrics are superseded and are not used in the final conclusions.
 
 ## Out of scope (for now)
 

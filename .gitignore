@@ -12,6 +12,7 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
+notebooks/*_executed.ipynb
 
 # Generated / machine-specific run artifacts (often contain absolute home paths)
 outputs/logs/

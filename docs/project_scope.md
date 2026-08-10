@@ -36,8 +36,8 @@
 - Dataproc batch ETL (`make pipeline` / `spark-submit`); full pipeline ~23 min on YARN
 - Corrected point-in-time known cast/director features; full-career lookup retained only for broadcast-plan evidence
 - Strict model feature contract excluding outcomes, Oscar fields, full-career fields, and retrospective vote totals
-- Local `02_core_analytics` — five corrected insights, hit-label sensitivity, and charts
-- Local `03` / `04` — weighted Logistic Regression / GBT comparison, chronological cohorts, PR curves, and validation-selected thresholds
+- Local `02_core_analytics`: five corrected insights, hit-label sensitivity, and charts
+- Local `03` and `04`: weighted Logistic Regression and GBT comparison, chronological cohorts, PR curves, and validation-selected thresholds
 - Oscar source confirmed as `DLu/oscar_data`
 
 ## Runtime split
@@ -58,13 +58,14 @@
 - Franchise analysis
 - Cloud execution (GCP / Azure)
 
-## Next
+## Final status
 
-- Rerun cast/crew and Oscar jobs to publish feature-semantics version 2 silver tables
-- Execute notebooks `02`–`04` and lock corrected metrics and charts
-- Reconcile every report and presentation number against final JSON
-- Complete the business report and 12-minute presentation plus 3-minute Q&A
+- Feature-semantics version 2 silver tables validated at one row per rated movie
+- Notebooks `02` to `04` executed with saved outputs and no execution errors
+- Final metrics, charts, plans, logs, report, and presentation reconciled
+- Full reference run completed with 50 passing tests
+- Final presentation allows 12 minutes of speaking and 3 minutes for questions
 
 ## Boundary
 
-Do not begin review sentiment, cloud deployment, GPU training, or other optional scope. Report and slide structure may proceed with placeholders, but final claims and numbers remain blocked until the corrected rerun is locked.
+Review sentiment, cloud deployment, GPU training, and other optional work remain future extensions rather than submission requirements.

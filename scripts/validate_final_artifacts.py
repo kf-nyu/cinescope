@@ -124,7 +124,6 @@ def validate_model(
     threshold = (threshold_block.get("selected") or {}).get("threshold")
     if threshold is None or not 0 <= float(threshold) <= 1:
         errors.append(f"{name} selected threshold is invalid")
-
     test_metrics = metrics.get("test_metrics") or {}
     for key in ("pr_auc", "roc_auc", "precision", "recall", "positive_f1"):
         value = test_metrics.get(key)
@@ -136,6 +135,57 @@ def validate_model(
             errors.append(f"{name} confusion count {key} is missing or invalid")
 
     validate_charts(metrics, name, charts_dir, errors)
+
+
+def validate_executed_notebooks(
+    notebooks_dir: Path,
+    source_dir: Path,
+    errors: list[str],
+) -> None:
+    """Require executed notebooks to match current source and contain no errors."""
+    names = (
+        "02_core_analytics",
+        "03_train_hit_model",
+        "04_train_awards_model",
+    )
+    for name in names:
+        source_path = source_dir / f"{name}.ipynb"
+        executed_path = notebooks_dir / f"{name}_executed.ipynb"
+        if not source_path.is_file():
+            errors.append(f"missing source notebook: {source_path}")
+            continue
+        if not executed_path.is_file():
+            errors.append(f"missing executed notebook: {executed_path}")
+            continue
+        try:
+            source = json.loads(source_path.read_text(encoding="utf-8"))
+            executed = json.loads(executed_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"invalid notebook JSON for {name}: {exc}")
+            continue
+
+        source_cells = source.get("cells") or []
+        executed_cells = executed.get("cells") or []
+        source_content = [
+            (cell.get("cell_type"), cell.get("source") or [])
+            for cell in source_cells
+        ]
+        executed_content = [
+            (cell.get("cell_type"), cell.get("source") or [])
+            for cell in executed_cells
+        ]
+        if source_content != executed_content:
+            errors.append(f"executed notebook source is stale: {executed_path}")
+
+        outputs = [
+            output
+            for cell in executed_cells
+            for output in (cell.get("outputs") or [])
+        ]
+        if not outputs:
+            errors.append(f"executed notebook has no saved outputs: {executed_path}")
+        if any(output.get("output_type") == "error" for output in outputs):
+            errors.append(f"executed notebook contains an error output: {executed_path}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -154,6 +204,16 @@ def parse_args() -> argparse.Namespace:
         "--report",
         type=Path,
         default=ROOT / "docs" / "final_report.md",
+    )
+    parser.add_argument(
+        "--notebooks-dir",
+        type=Path,
+        default=ROOT / "outputs" / "notebooks",
+    )
+    parser.add_argument(
+        "--source-notebooks-dir",
+        type=Path,
+        default=ROOT / "notebooks",
     )
     parser.add_argument("--allow-report-placeholders", action="store_true")
     return parser.parse_args()
@@ -187,6 +247,12 @@ def main() -> int:
         validate_model(hit, "hit model", args.charts_dir, errors)
     if awards:
         validate_model(awards, "awards model", args.charts_dir, errors)
+
+    validate_executed_notebooks(
+        args.notebooks_dir,
+        args.source_notebooks_dir,
+        errors,
+    )
 
     if not args.report.is_file():
         errors.append(f"missing report source: {args.report}")
