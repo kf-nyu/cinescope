@@ -1,8 +1,7 @@
 param(
     [string]$ProjectFolder = "C:\Users\ishadave\OneDrive - Microsoft\Documents\Personal\NYU Cyber Fellows\Classes\Summer 26\Big Data\Juypter Hub Shared\Project",
     [string]$RepoRoot = (Split-Path -Parent $PSScriptRoot),
-    [string]$OutputName = "CineScope_Final_Presentation_FINAL_2026-08-10.pptx",
-    [string]$OutputPath = ""
+    [string]$OutputName = "CineScope_Final_Presentation_2026-08-10.pptx"
 )
 
 Set-StrictMode -Version Latest
@@ -27,12 +26,7 @@ $Color = @{
 
 $MetricsDir = Join-Path $ProjectFolder "outputs\metrics"
 $ChartsDir = Join-Path $ProjectFolder "outputs\charts\generated"
-if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = Join-Path $ProjectFolder $OutputName
-}
-else {
-    $OutputPath = [IO.Path]::GetFullPath($OutputPath)
-}
+$OutputPath = Join-Path $ProjectFolder $OutputName
 $StagedPath = Join-Path ([IO.Path]::GetTempPath()) ("cinescope-" + [guid]::NewGuid().ToString("N") + ".pptx")
 $SlideCount = 0
 $BuildSucceeded = $false
@@ -356,11 +350,11 @@ try {
         Add-Text $slide $modelRows[$index][4] 716 ($top + 16) 74 28 15 $Color.Ink "Bahnschrift" $true 2 | Out-Null
         Add-Text $slide $modelRows[$index][5] 808 ($top + 16) 96 28 15 $Color.Ink "Bahnschrift" $true 2 | Out-Null
     }
-    Add-ImageOrPlaceholder $slide $HitPrCurve 48 300 408 176 "hit_model_pr_curve.png after corrected rerun"
-    Add-ImageOrPlaceholder $slide $AwardsPrCurve 504 300 408 176 "awards_model_pr_curve.png after corrected rerun"
+    Add-ImageOrPlaceholder $slide $HitPrCurve 48 326 408 142 "hit_model_pr_curve.png after corrected rerun"
+    Add-ImageOrPlaceholder $slide $AwardsPrCurve 504 326 408 142 "awards_model_pr_curve.png after corrected rerun"
     Add-Text $slide "PR AUC is primary because positives are rare; test years are evaluated once." 48 484 864 24 13 $Color.Coral "Bahnschrift" $true 2 | Out-Null
     Add-Footer $slide 9
-    Add-Notes $slide "KENJI - 2:10. We compare class-weighted Logistic Regression with GBT. Candidate parameters are selected by validation PR AUC, then a predefined validation sweep chooses the tested threshold with the highest positive-class F1. Only then do we evaluate later test years. Explain the final table and curves. Avoid accuracy and old weighted F1. Handoff: With the technical evidence in place, Isha will close with the practical use and limitations."
+    Add-Notes $slide "KENJI - 2:10. We compare class-weighted Logistic Regression with GBT. Candidate parameters are selected by validation PR AUC, then a validation threshold sweep chooses the positive-class F1 operating point. Only then do we evaluate later test years. Explain the final table and curves after the v2 rerun. Avoid accuracy and old weighted F1. Handoff: With the technical evidence in place, Isha will close with the practical use and limitations."
 
     # 7. Findings: genre and runtime
     $slide = New-Slide
@@ -379,21 +373,14 @@ try {
     Add-Title $slide "03" "Creative history is useful signal, not a verdict"
     Add-ImageOrPlaceholder $slide $DirectorChart 46 104 430 286 "director_prior_vs_rating.png after corrected analytics rerun"
     $corr = $(if ($null -ne $Analytics) { Format-Metric $Analytics.director_prior_rating_corr } else { "PENDING V2" })
-    $niche = $(if ($null -ne $Analytics) { "{0:N0}" -f [int]$Analytics.anomaly_count_rating_ge_8_bottom_decile_votes } else { "PENDING V2" })
+    $niche = $(if ($null -ne $Analytics) { [string]$Analytics.anomaly_count_rating_ge_8_bottom_decile_votes } else { "PENDING V2" })
     Add-Panel $slide 504 104 408 104 $Color.TealDark $Color.TealDark | Out-Null
     Add-Text $slide "DIRECTOR ASSOCIATION" 526 123 260 18 10 $Color.Gold "Bahnschrift" $true | Out-Null
     Add-Text $slide ("r = " + $corr) 526 152 350 38 28 $Color.White "Bahnschrift SemiBold" $true | Out-Null
     Add-Panel $slide 504 224 408 104 $Color.White $Color.LightGray | Out-Null
     Add-Text $slide "NICHE CANDIDATES" 526 243 260 18 10 $Color.Coral "Bahnschrift" $true | Out-Null
     Add-Text $slide $niche 526 272 350 38 28 $Color.Ink "Bahnschrift SemiBold" $true | Out-Null
-    Add-Panel $slide 504 344 408 112 $Color.Mist $Color.Mist | Out-Null
-    Add-Text $slide "DIRECTOR EXPERIENCE LIFT" 526 360 250 18 10 $Color.Teal "Bahnschrift" $true | Out-Null
-    $liftText = $(if ($null -ne $Analytics) {
-        $low = $Analytics.pre_release_signal_lift | Where-Object { $_.signal_band -eq 1 } | Select-Object -First 1
-        $high = $Analytics.pre_release_signal_lift | Where-Object { $_.signal_band -eq 4 } | Select-Object -First 1
-        ("{0:N2}x in quartile 4  vs  {1:N2}x in quartile 1" -f [double]$high.lift_vs_eligible, [double]$low.lift_vs_eligible)
-    } else { "PENDING V2 RERUN" })
-    Add-Text $slide $liftText 526 397 360 36 20 $Color.Ink "Bahnschrift SemiBold" $true 2 | Out-Null
+    Add-ImageOrPlaceholder $slide $SignalLiftChart 504 344 408 112 "pre_release_signal_lift.png after corrected analytics rerun"
     Add-Text $slide "Association is not causation. Use these signals to prioritize diligence and discovery." 48 470 864 30 15 $Color.Coral "Bahnschrift" $true 2 | Out-Null
     Add-Footer $slide 4
     Add-Notes $slide "ISHA - 1:15. Director prior rating has a moderate association with the next film, but stronger directors may also receive better scripts, budgets, and distribution. High-rating, low-vote titles are niche discovery candidates, not proof of manipulation. The final lift chart uses prior experience rather than the circular vote-quartile analysis."

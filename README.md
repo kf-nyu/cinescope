@@ -272,21 +272,24 @@ Readers should copy an example env file and set their own paths / `CINESCOPE_NET
 
 **Done**
 - IMDb + Oscars ETL (local + Dataproc batch), cast/crew features, awards enrichment, unit tests
-- Dataproc full pipeline: approximately **23 minutes** (ETL only, with no analytics or MLlib on the cluster)
+- Dataproc full pipeline ≈ **23 min** (ETL only — no analytics/MLlib on the cluster)
 - Point-in-time known cast/director semantics and strict model feature exclusions
-- Local notebook `02_core_analytics`: five non-circular findings, label sensitivity, and charts
-- Local notebooks `03` and `04`: weighted Logistic Regression and GBT comparison, chronological validation, PR curves, and validation-selected thresholds
-- Final reference run completed with **50 passing tests** and 348,676 rated films
-- Final business report and 12-minute presentation completed
+- Local notebook `02_core_analytics` — five non-circular findings, label sensitivity, and charts
+- Local notebooks `03` / `04` — weighted Logistic Regression / GBT comparison, chronological validation, PR curves, and validation-selected thresholds
+
+**In progress**
+- Rerun cast/crew, Oscar enrichment, analytics, and both models against the full reference dataset
+- Replace the superseded July 31 model metrics with feature-semantics version 2 results
+- Final business report and presentation
 
 **Runtime**
 - Dataproc = ETL batch only  
 - Analytics / MLlib = local Spark notebooks (not JupyterHub)
 
 **Evidence status**
-- Final run summary: [`docs/execution_evidence.md`](docs/execution_evidence.md)
-- Generated JSON, plans, logs, charts, and executed notebooks are kept outside Git because they contain local paths and reproducible output.
-- The July 31 model metrics are superseded and are not used in the final conclusions.
+- The July 31 ETL metrics and physical plans remain valid reference evidence.
+- The July 31 model metrics are superseded because their known-person flags used full-career outcomes.
+- Final report and slide metrics must come from the corrected chronological rerun.
 
 ## Out of scope (for now)
 
